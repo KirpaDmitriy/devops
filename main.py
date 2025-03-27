@@ -1,42 +1,83 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import List
-import faiss
+from typing import List, Dict, Any
 import numpy as np
+import faiss
 from sentence_transformers import SentenceTransformer
 
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
-app = FastAPI()
-
-dim = 384
-index = faiss.IndexFlatL2(dim)
-
-documents = []
-
-class DocumentRequest(BaseModel):
+class Document(BaseModel):
+    id: int
     content: str
 
-class SearchRequest(BaseModel):
-    query: str
-    top_k: int = 5
+app = FastAPI()
 
-@app.post("/add_document/")
-async def add_document(doc: DocumentRequest):
-    embedding = model.encode(doc.content)
-    index.add(np.array([embedding], dtype=np.float32))
-    documents.append(doc.content)
-    return {"message": "Document added successfully", "id": len(documents) - 1}
+document_store: Dict[int, Document] = {}
+document_vectors: Dict[int, np.ndarray] = {}
 
-@app.post("/search/")
-async def search(search_request: SearchRequest):
-    query_embedding = model.encode(search_request.query)
-    top_k = search_request.top_k
+vector_dim = model.get_sentence_embedding_dimension()
 
-    if index.ntotal == 0:
-        raise HTTPException(status_code=404, detail="No documents in the database")
+index = faiss.IndexFlatL2(vector_dim)
 
-    distances, indices = index.search(np.array([query_embedding], dtype=np.float32), top_k)
-    results = [{"content": documents[i], "distance": float(distances[0][k])} for k, i in enumerate(indices[0])]
+def text_to_vector(text: str) -> np.ndarray:
+    vector = model.encode(text, convert_to_tensor=False)
+    return np.array(vector).astype('float32')
 
-    return {"results": results}
+@app.post("/add_document", response_model=Document)
+async def add_document(document: Document):
+    if document.id in document_store:
+        raise HTTPException(status_code=400, detail="Document already exists")
+    
+    doc_vector = text_to_vector(document.content)
+    
+    document_store[document.id] = document
+    document_vectors[document.id] = doc_vector
+    
+    index.add(np.array([doc_vector]))
+    
+    return document
+
+@app.delete("/delete_document/{doc_id}", response_model=Dict[str, Any])
+async def delete_document(doc_id: int):
+    if doc_id not in document_store:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    del document_store[doc_id]
+    del document_vectors[doc_id]
+    
+    reindex_faiss()
+    
+    return {"message": "Document deleted successfully", "doc_id": doc_id}
+
+@app.put("/update_document/{doc_id}", response_model=Document)
+async def update_document(doc_id: int, new_data: Document):
+    if doc_id not in document_store:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    existing_doc = document_store[doc_id]
+    updated_doc = existing_doc.copy(update=new_data.dict(exclude_unset=True))
+    updated_vector = text_to_vector(updated_doc.content)
+    
+    document_store[doc_id] = updated_doc
+    document_vectors[doc_id] = updated_vector
+    
+    reindex_faiss()
+    
+    return updated_doc
+
+@app.get("/search/", response_model=List[int])
+async def search(query: str, k: int = 5):
+    query_vector = text_to_vector(query)
+    dist, indices = index.search(np.array([query_vector]), k)
+    
+    result_ids = [list(document_vectors.keys())[i] for i in indices[0] if i < len(document_vectors)]
+    
+    return result_ids
+
+def reindex_faiss():
+    """Переиндексация FAISS после удаления/обновления."""
+    index.reset()
+    vectors = np.array(list(document_vectors.values()))
+    if len(vectors) > 0:
+        index.add(vectors)
