@@ -12,7 +12,7 @@ def test_add_document():
     assert "id" in data
 
 def test_search():
-    client.post("/add_document/", json={"content": "FastAPI test document"})
+    client.post("/add_document/", json={"content": "FastAPI or Django... That is the question!"})
   
     response = client.post("/search/", json={"query": "test document", "top_k": 1})
     assert response.status_code == 200
@@ -21,4 +21,4 @@ def test_search():
     assert "results" in data
     assert len(data["results"]) > 0
     assert "content" in data["results"][0]
-    assert data["results"][0]["content"] == "FastAPI test document"
+    assert data["results"][0]["content"] == "Hello, this is a test document!"
