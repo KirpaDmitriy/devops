@@ -24,7 +24,7 @@ def text_to_vector(text: str) -> np.ndarray:
     vector = model.encode(text, convert_to_tensor=False)
     return np.array(vector).astype('float32')
 
-@app.post("/add_document", response_model=Document)
+@app.post("/add_document", response_model=Document, status_code=201)
 async def add_document(document: Document):
     if document.id in document_store:
         raise HTTPException(status_code=400, detail="Document already exists")
