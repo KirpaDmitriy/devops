@@ -1,9 +1,13 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
+from fastapi.responses import HTMLResponse
 from typing import List
 import faiss
 import numpy as np
 from sentence_transformers import SentenceTransformer
+from fastapi.templating import Jinja2Templates
+
+templates = Jinja2Templates(directory="templates")
 
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
@@ -40,3 +44,7 @@ async def search(search_request: SearchRequest):
     results = [{"content": documents[i], "distance": float(distances[0][k])} for k, i in enumerate(indices[0])]
 
     return {"results": results}
+
+@app.get("/page", response_class=HTMLResponse)
+async def page(request: Request, id: str):
+    return templates.TemplateResponse(request=request, name="index.html")
