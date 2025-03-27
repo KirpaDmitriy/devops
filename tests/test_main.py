@@ -5,16 +5,16 @@ from main import app
 client = TestClient(app)
 
 def test_add_document():
-    response = client.post("/add_document/", json={"content": "Hello, this is a test document!"})
-    assert response.status_code == 200
+    response = client.post("/add_document/", json={"id": "https://itmo.ru", "content": "Hello, this is a test document!"})
+    assert response.status_code == 201
     data = response.json()
     assert data["message"] == "Document added successfully"
     assert "id" in data
 
 def test_search():
-    client.post("/add_document/", json={"content": "FastAPI or Django... That is the question!"})
+    client.post("/add_document/", json={"id": "https://neitmo.ru", "content": "FastAPI or Django... That is the question!"})
   
-    response = client.post("/search/", json={"query": "test document", "top_k": 1})
+    response = client.get("/search/", params={"query": "test document", "top_k": 1})
     assert response.status_code == 200
     data = response.json()
     
