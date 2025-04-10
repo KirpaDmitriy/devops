@@ -10,7 +10,7 @@ documents = {}
 documents = {}
 current_idx = 0
 
-def add_document(embedding: np.ndarray, content: str):
+def add_document(id, embedding: np.ndarray, content: str):
     if doc_id in documents:
         raise ValueError("Document ID already exists.")
     global current_idx
