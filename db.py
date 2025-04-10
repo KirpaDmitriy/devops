@@ -1,5 +1,6 @@
 import faiss
 import numpy as np
+from utils import get_embedding
 
 dimension = 384
 index = faiss.IndexFlatL2(dimension)
