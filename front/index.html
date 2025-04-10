@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Search</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: auto; }
+        .section { margin-bottom: 20px; }
+        .button { padding: 10px 20px; background-color: #28a745; color: #fff; border: none; cursor: pointer; }
+        .button:hover { background-color: #218838; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Document Search</h1>
+
+        <div class="section">
+            <h2>Add Document</h2>
+            <input type="text" id="docId" placeholder="Document ID">
+            <textarea id="docContent" placeholder="Document Content" rows="4" cols="50"></textarea>
+            <button class="button" onclick="addDocument()">Add</button>
+            <p id="addResponse"></p>
+        </div>
+
+        <div class="section">
+            <h2>Search</h2>
+            <input type="text" id="query" placeholder="Search Query">
+            <button class="button" onclick="searchDocument()">Search</button>
+            <ul id="searchResults"></ul>
+        </div>
+    </div>
+
+    <script>
+        async function addDocument() {
+            const docId = document.getElementById('docId').value;
+            const docContent = document.getElementById('docContent').value;
+
+            const response = await fetch('/add/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: docId, content: docContent })
+            });
+
+            const data = await response.json();
+            document.getElementById('addResponse').innerText = data.message || 'Error adding document';
+        }
+
+        async function searchDocument() {
+            const query = document.getElementById('query').value;
+            const response = await fetch(/query/?query=${encodeURIComponent(query)});
+            const data = await response.json();
+            const resultsList = document.getElementById('searchResults');
+            resultsList.innerHTML = '';
+
+            if (data.results && data.results.length > 0) {
+                data.results.forEach(result => {
+                    const li = document.createElement('li');
+                    li.innerText = result[0] + ' (Distance: ' + result[1].toFixed(2) + ')';
+                    resultsList.appendChild(li);
+                });
+            } else {
+                resultsList.innerHTML = '<li>No documents found.</li>';
+            }
+        }
+    </script>
+</body>
+</html>
