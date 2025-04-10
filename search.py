@@ -7,5 +7,5 @@ def search(query_embedding: np.ndarray, k: int = 5):
         return []
     print(f'Documentici {documents}')
     print(f'distances {documents, indices}')
-    results = [(documents[i], distances[idx]) for idx, i in enumerate(indices[0])]
+    results = [(documents[i], distances[0, idx]) for idx, i in enumerate(indices[0]) if i in documents]
     return results
