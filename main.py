@@ -3,6 +3,7 @@ from models import Document
 from db import add_document, delete_document, update_document
 from utils import get_embedding
 from search import search
+from text_generation import generate_response
 
 app = FastAPI()
 
@@ -36,5 +37,5 @@ async def update_document_endpoint(document: Document):
 async def query_document(query: str):
     embedding = get_embedding(query)
     results = search(embedding)
-
-    return {"results": results}
+    response_text = generate_response(query, results)
+    return {"response": response_text, "results": results}
