@@ -1,7 +1,7 @@
 import faiss
 import numpy as np
 
-dimension = 768
+dimension = 384
 index = faiss.IndexFlatL2(dimension)
 
 documents = {}
