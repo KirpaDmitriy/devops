@@ -7,11 +7,16 @@ index = faiss.IndexFlatL2(dimension)
 
 documents = {}
 
-def add_document(doc_id: str, embedding: np.ndarray, content: str):
+documents = {}
+current_idx = 0
+
+def add_document(embedding: np.ndarray, content: str):
     if doc_id in documents:
         raise ValueError("Document ID already exists.")
-    index.add(embedding)
-    documents[doc_id] = content
+    global current_idx
+    index.add(np.array([embedding]))
+    documents[current_idx] = content
+    current_idx += 1
 
 def delete_document(doc_id: str):
     if doc_id not in documents:
